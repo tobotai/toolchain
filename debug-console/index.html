@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tbot Debug Console · 底盘调试台</title>
+<style>
+  :root{--bg:#0f172a;--panel:#1e293b;--line:#334155;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;--txt:#e2e8f0;--dim:#94a3b8}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font:14px/1.6 "Segoe UI",system-ui,sans-serif;padding:16px}
+  h1{font-size:20px;margin-bottom:4px}
+  .sub{color:var(--dim);margin-bottom:16px;font-size:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+  .card h2{font-size:14px;color:#7dd3fc;margin-bottom:10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  input,select{background:#0b1220;border:1px solid var(--line);color:var(--txt);padding:6px 10px;border-radius:6px;font-size:13px;min-width:90px}
+  input:focus,select:focus{outline:1px solid #38bdf8}
+  button{background:#0ea5e9;border:none;color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px}
+  button:hover{background:#38bdf8}
+  button:disabled{background:#334155;cursor:not-allowed}
+  button.svc{background:#334155;border:1px solid #475569}
+  button.svc:hover{background:#475569}
+  button.danger{background:#b91c1c}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .stat{display:flex;justify-content:space-between;padding:6px 10px;background:#0b1220;border-radius:6px;margin-bottom:6px;font-size:13px}
+  .stat b{color:#7dd3fc;font-weight:600}
+  .batt{height:10px;background:#0b1220;border-radius:5px;overflow:hidden;margin-top:4px}
+  .batt>div{height:100%;background:linear-gradient(90deg,#22c55e,#a3e635);transition:width .4s}
+  .log{background:#0b1220;border:1px solid var(--line);border-radius:6px;height:300px;overflow:auto;padding:8px;font:12px/1.5 Consolas,monospace;white-space:pre-wrap;word-break:break-all}
+  .log .t{color:#38bdf8}.log .in{color:#c4b5fd}.log .svc{color:#a7f3d0}.log .err{color:#f87171}
+  .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;background:#0b1220;border:1px solid var(--line)}
+  .badge.on{color:var(--ok);border-color:var(--ok)}
+  .badge.off{color:var(--dim)}
+  .map-item{padding:6px 10px;background:#0b1220;border-radius:6px;margin-bottom:6px;font-size:13px}
+  .map-item b{color:#fbbf24}
+  .map-item .goals{color:var(--dim);font-size:12px}
+  .path-svg{width:100%;height:140px;background:#0b1220;border:1px solid var(--line);border-radius:6px;margin-top:6px}
+</style>
+</head>
+<body>
+<h1>🔧 Tbot Debug Console · 底盘调试台</h1>
+<div class="sub">TOBOT AI 移动底盘 · ROS over WebSocket (rosbridge) 调试工具 · 零依赖，浏览器直连 <code>ws://&lt;robot-ip&gt;:9090</code></div>
+
+<div class="card">
+  <h2>连接 Connection</h2>
+  <div class="row">
+    <input id="ip" value="192.168.1.151" placeholder="机器人 IP">
+    <button id="conn" onclick="toggleConn()">连接 Connect</button>
+    <span id="state" class="badge off">● 未连接</span>
+  </div>
+</div>
+
+<div class="grid">
+  <div>
+    <div class="card">
+      <h2>实时状态 Live Status</h2>
+      <div class="stat"><span>电量 Battery</span><b id="batt">--</b></div>
+      <div class="batt"><div id="battbar" style="width:0%"></div></div>
+      <div class="stat"><span>充电 Charging</span><b id="charging">--</b></div>
+      <div class="stat"><span>定位 Pose</span><b id="pose">--</b></div>
+      <div class="stat"><span>导航状态 Nav</span><b id="nav">--</b></div>
+      <div class="stat"><span>路径点 Path pts</span><b id="path">--</b></div>
+      <svg class="path-svg" id="pathsvg"></svg>
+    </div>
+    <div class="card">
+      <h2>地图 Map List</h2>
+      <div id="maplist"><div class="map-item">未连接</div></div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>Service 调用 Controls</h2>
+      <div class="row"><button class="svc" onclick="svc('/start_mapping_kitty',{})">开始建图 Start Mapping</button></div>
+      <div class="row"><button class="svc" onclick="svc('/docking_kitty',{})">回充电桩 Dock</button></div>
+      <div class="row">
+        <input id="m_save" placeholder="地图名 map_name"><button class="svc" onclick="svc('/save_map_kitty',{filepath:$('#m_save').value})">保存地图 Save</button>
+      </div>
+      <div class="row">
+        <input id="m_sel" placeholder="地图名 map_name"><button class="svc" onclick="svc('/select_map_and_start_kitty',{filepath:$('#m_sel').value})">选择并启动 Select &amp; Start</button>
+      </div>
+      <div class="row">
+        <input id="m_del" placeholder="地图名 map_name"><button class="svc danger" onclick="svc('/delete_map_kitty',{map_name:$('#m_del').value})">删除地图 Delete</button>
+      </div>
+      <div class="row">
+        <input id="gx" placeholder="x(m)" value="1.0" style="width:70px"><input id="gy" placeholder="y(m)" value="2.0" style="width:70px">
+        <button class="svc" onclick="svc('/navigate_to_pose',{goal:{pose:{position:{x:+$('#gx').value,y:+$('#gy').value,z:0}}}})">导航 Navigate</button>
+        <button class="svc danger" onclick="svc('/navigate_to_pose',{goal:{pose:{position:{x:999999,y:888888,z:0}}}})">取消 Cancel</button>
+      </div>
+      <div class="row">
+        <input id="ag_map" placeholder="地图" value="Lobby" style="width:70px"><input id="ag_name" placeholder="目标名" value="Reception" style="width:90px">
+        <input id="ag_x" placeholder="x" value="1.0" style="width:60px"><input id="ag_y" placeholder="y" value="2.0" style="width:60px"><input id="ag_t" placeholder="θ(rad)" value="0.5" style="width:70px">
+        <button class="svc" onclick="svc('/add_goal_kitty',{map_name:$('#ag_map').value,goal_name:$('#ag_name').value,x:+$('#ag_x').value,y:+$('#ag_y').value,theta:+$('#ag_t').value})">添加目标点 Add Goal</button>
+      </div>
+      <div class="row">
+        <input id="dg_map" placeholder="地图" value="Lobby" style="width:70px"><input id="dg_name" placeholder="目标名" value="Reception" style="width:90px">
+        <button class="svc danger" onclick="svc('/delete_goal_kitty',{map_name:$('#dg_map').value,goal_name:$('#dg_name').value})">删除目标点 Del Goal</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>消息日志 Log</h2>
+      <div class="log" id="log">-- 未连接 --\n</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const IP=$('ip'), connBtn=$('conn'), state=$('state');
+let ws=null, connected=false, pathPts=[];
+const TOPICS={
+  '/fast_lio_localization':'nav_msgs/Odometry',
+  '/aft_pgo_path':'nav_msgs/Path',
+  '/map_list_kitty':'kitty_runtime_manager/MapList',
+  '/ebot_goal_status_local_planner':'std_msgs/Float64MultiArray',
+  '/ebot_work_state':'std_msgs/Float64MultiArray'
+};
+function log(kind,msg){const l=$('log');l.insertAdjacentHTML('beforeend',`<span class="${kind}">[${new Date().toLocaleTimeString()}] ${msg}\n</span>`);l.scrollTop=l.scrollHeight;}
+function toggleConn(){
+  if(connected){ws.close();return;}
+  ws=new WebSocket(`ws://${IP.value}:9090`);
+  ws.onopen=()=>{connected=true;connBtn.textContent='断开 Disconnect';state.className='badge on';state.textContent='● 已连接';log('t','已连接 '+IP.value);Object.keys(TOPICS).forEach(t=>ws.send(JSON.stringify({op:'subscribe',topic:t,type:TOPICS[t]})));};
+  ws.onmessage=e=>{
+    const m=JSON.parse(e.data);
+    if(m.op==='publish')handlePublish(m.topic,m.msg);
+    else if(m.op==='service_response'){log('svc','[SVC] '+m.service+' → '+JSON.stringify(m.values));}
+    else if(m.op==='status'&&!m.ok){log('err','[WS] '+m.error);}
+  };
+  ws.onerror=()=>{log('err','连接失败，请检查 IP 与网络');};
+  ws.onclose=()=>{connected=false;connBtn.textContent='连接 Connect';state.className='badge off';state.textContent='● 未连接';log('t','连接已断开');};
+}
+function handlePublish(topic,msg){
+  switch(topic){
+    case '/ebot_work_state':{
+      const a=msg.data;
+      $('batt').textContent=a[1]+'%';$('battbar').style.width=Math.max(0,Math.min(100,a[1]))+'%';
+      $('charging').textContent=a[0]===1?'⚡ 充电中':'未充电';break;}
+    case '/fast_lio_localization':{
+      const p=msg.pose.pose.position,o=msg.pose.pose.orientation;
+      const yaw=Math.atan2(2*(o.w*o.z+o.x*o.y),1-2*(o.z*o.z+o.y*o.y));
+      $('pose').textContent=`x=${p.x.toFixed(2)} y=${p.y.toFixed(2)} yaw=${(yaw*180/Math.PI).toFixed(1)}°`;break;}
+    case '/ebot_goal_status_local_planner':
+      $('nav').textContent=msg.data[0]===1?'✅ 已到达':'导航中…';break;
+    case '/aft_pgo_path':{
+      pathPts=msg.poses||[];$('path').textContent=pathPts.length+' pts';
+      drawPath();break;}
+    case '/map_list_kitty':{
+      let h='';
+      (msg.maps||[]).forEach(mp=>{
+        h+=`<div class="map-item"><b>${mp.map_name}</b> <span class="goals">目标: ${(mp.goals||[]).map(g=>g.name).join(', ')||'无'}</span></div>`;});
+      $('maplist').innerHTML=h||'<div class="map-item">无地图</div>';break;}
+  }
+}
+function drawPath(){
+  const svg=$('pathsvg');let inner='';
+  if(pathPts.length>1){
+    const xs=pathPts.map(p=>p.pose.position.x),ys=pathPts.map(p=>p.pose.position.y);
+    const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+    const W=svg.clientWidth||300,H=svg.clientHeight||140;
+    const sx=v=>(v-minX)/(maxX-minX||1)*(W-20)+10, sy=v=>(1-(v-minY)/(maxY-minY||1))*(H-20)+10;
+    const pts=pathPts.map(p=>`${sx(p.pose.position.x).toFixed(1)},${sy(p.pose.position.y).toFixed(1)}`).join(' ');
+    inner=`<polyline points="${pts}" fill="none" stroke="#38bdf8" stroke-width="2"/>`;
+  }
+  svg.innerHTML=inner||'';
+}
+function svc(service,args){
+  if(!connected){log('err','请先连接');return;}
+  ws.send(JSON.stringify({op:'call_service',service,args}));
+  log('in',`→ call ${service} ${JSON.stringify(args)}`);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<robot name="tbot-l">
+  <!-- Tbot-L · 双驱差速 · 载重 10kg · 自重 10kg · 爬坡 15° · 越障 2cm
+       官网规格: https://www.tobotai.com/specs.html -->
+  <link name="base_link">
+    <inertial><mass value="10"/>
+      <inertia ixx="0.102" ixy="0.0" ixz="0.0" iyy="0.015" iyz="0.0" izz="0.102"/>
+    </inertial>
+    <visual><geometry><box size="0.35 0.33 0.136"/></geometry>
+      <material name="gray"><color rgba="0.55 0.58 0.62 1.0"/></material></visual>
+    <collision><geometry><box size="0.35 0.33 0.136"/></geometry></collision>
+  </link>
+  <link name="laser_link"><visual><geometry><cylinder radius="0.08" length="0.10"/></geometry>
+    <material name="black"><color rgba="0.1 0.1 0.12 1.0"/></material></visual></link>
+  <joint name="laser_joint" type="fixed">
+    <parent link="base_link"/><child link="laser_link"/>
+    <origin xyz="0 0 0.168"/></joint>
+  <link name="wheel_1"><visual><geometry><cylinder radius="0.08" length="0.04"/></geometry>
+    <material name="dark"><color rgba="0.15 0.15 0.17 1.0"/></material></visual>
+    <collision><geometry><cylinder radius="0.08" length="0.04"/></geometry></collision></link>
+  <joint name="wheel_1_joint" type="continuous">
+    <parent link="base_link"/><child link="wheel_1"/>
+    <origin xyz="0.05 0.185 -0.008000000000000004" rpy="0 0 0"/>
+  </joint>
+  <link name="wheel_2"><visual><geometry><cylinder radius="0.08" length="0.04"/></geometry>
+    <material name="dark"><color rgba="0.15 0.15 0.17 1.0"/></material></visual>
+    <collision><geometry><cylinder radius="0.08" length="0.04"/></geometry></collision></link>
+  <joint name="wheel_2_joint" type="continuous">
+    <parent link="base_link"/><child link="wheel_2"/>
+    <origin xyz="0 0.185 -0.008000000000000004" rpy="0 0 0"/>
+  </joint>
+  <gazebo reference="base_link"><material>Gazebo/Gray</material></gazebo>
+</robot>

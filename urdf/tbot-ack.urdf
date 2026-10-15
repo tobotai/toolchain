@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<robot name="tbot-ack">
+  <!-- Tbot-ACK · 阿克曼转向 · 载重 300~500kg · 自重 100kg · 爬坡 30° · 越障 5cm
+       官网规格: https://www.tobotai.com/specs.html -->
+  <link name="base_link">
+    <inertial><mass value="100"/>
+      <inertia ixx="18.750" ixy="0.0" ixz="0.0" iyy="1.021" iyz="0.0" izz="18.750"/>
+    </inertial>
+    <visual><geometry><box size="1.5 0.8 0.35"/></geometry>
+      <material name="gray"><color rgba="0.55 0.58 0.62 1.0"/></material></visual>
+    <collision><geometry><box size="1.5 0.8 0.35"/></geometry></collision>
+  </link>
+  <link name="laser_link"><visual><geometry><cylinder radius="0.08" length="0.10"/></geometry>
+    <material name="black"><color rgba="0.1 0.1 0.12 1.0"/></material></visual></link>
+  <joint name="laser_joint" type="fixed">
+    <parent link="base_link"/><child link="laser_link"/>
+    <origin xyz="0 0 0.275"/></joint>
+  <link name="wheel_1"><visual><geometry><cylinder radius="0.16" length="0.06"/></geometry>
+    <material name="dark"><color rgba="0.15 0.15 0.17 1.0"/></material></visual>
+    <collision><geometry><cylinder radius="0.16" length="0.06"/></geometry></collision></link>
+  <joint name="wheel_1_joint" type="continuous">
+    <parent link="base_link"/><child link="wheel_1"/>
+    <origin xyz="0.05 0.42000000000000004 -0.07499999999999998" rpy="0 0 0"/>
+  </joint>
+  <link name="wheel_2"><visual><geometry><cylinder radius="0.16" length="0.06"/></geometry>
+    <material name="dark"><color rgba="0.15 0.15 0.17 1.0"/></material></visual>
+    <collision><geometry><cylinder radius="0.16" length="0.06"/></geometry></collision></link>
+  <joint name="wheel_2_joint" type="continuous">
+    <parent link="base_link"/><child link="wheel_2"/>
+    <origin xyz="0 0.42000000000000004 -0.07499999999999998" rpy="0 0 0"/>
+  </joint>
+  <link name="wheel_3"><visual><geometry><cylinder radius="0.16" length="0.06"/></geometry>
+    <material name="dark"><color rgba="0.15 0.15 0.17 1.0"/></material></visual>
+    <collision><geometry><cylinder radius="0.16" length="0.06"/></geometry></collision></link>
+  <joint name="wheel_3_joint" type="continuous">
+    <parent link="base_link"/><child link="wheel_3"/>
+    <origin xyz="0.05 -0.42000000000000004 -0.07499999999999998" rpy="0 0 0"/>
+  </joint>
+  <link name="wheel_4"><visual><geometry><cylinder radius="0.16" length="0.06"/></geometry>
+    <material name="dark"><color rgba="0.15 0.15 0.17 1.0"/></material></visual>
+    <collision><geometry><cylinder radius="0.16" length="0.06"/></geometry></collision></link>
+  <joint name="wheel_4_joint" type="continuous">
+    <parent link="base_link"/><child link="wheel_4"/>
+    <origin xyz="0 -0.42000000000000004 -0.07499999999999998" rpy="0 0 0"/>
+  </joint>
+  <gazebo reference="base_link"><material>Gazebo/Gray</material></gazebo>
+</robot>
